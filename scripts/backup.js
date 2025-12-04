@@ -212,16 +212,19 @@ class BackupManager {
         const signInBtn = document.getElementById('google-signin-btn');
         const signOutBtn = document.getElementById('google-signout-btn');
         const syncBtn = document.getElementById('google-sync-btn');
+        const restoreBtn = document.getElementById('google-restore-btn');
 
         if (signInBtn && signOutBtn) {
             if (isSignedIn) {
                 signInBtn.style.display = 'none';
                 signOutBtn.style.display = 'inline-flex';
                 if (syncBtn) syncBtn.disabled = false;
+                if (restoreBtn) restoreBtn.disabled = false;
             } else {
                 signInBtn.style.display = 'inline-flex';
                 signOutBtn.style.display = 'none';
                 if (syncBtn) syncBtn.disabled = true;
+                if (restoreBtn) restoreBtn.disabled = true;
             }
         }
     }
@@ -290,7 +293,7 @@ class BackupManager {
                 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
                 {
                     method: 'POST',
-                    headers: new Headers({ 'Authorization': 'Bearer ' + gapi.auth.getToken().access_token }),
+                    headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
                     body: form
                 }
             );
