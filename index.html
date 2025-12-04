@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tax Deductible Tracker - ZIMRA QPD</title>
+  <link rel="stylesheet" href="styles/main.css">
+
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- App Container -->
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="app-header">
+        <div class="app-logo">
+          <div class="app-logo-icon">💰</div>
+          <div class="app-logo-text">
+            <h1>Tax Tracker</h1>
+            <p>ZIMRA QPD</p>
+          </div>
+        </div>
+      </div>
+
+      <nav>
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="#" class="nav-link active" data-view="dashboard">
+              <span class="nav-icon">📊</span>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" data-view="expenses">
+              <span class="nav-icon">💳</span>
+              <span>Expenses</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" data-view="reports">
+              <span class="nav-icon">📄</span>
+              <span>Quarterly Reports</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" data-view="settings">
+              <span class="nav-icon">⚙️</span>
+              <span>Settings & Backup</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div style="margin-top: auto; padding-top: var(--spacing-xl); border-top: 1px solid var(--glass-border);">
+        <button class="btn btn-primary" style="width: 100%;" id="add-expense-btn">
+          ➕ Add Expense
+        </button>
+        <button class="btn btn-secondary mt-2" style="width: 100%;" id="add-category-btn">
+          🏷️ Add Category
+        </button>
+        <button class="btn btn-success mt-2" style="width: 100%;" id="quick-export-btn" title="Quick Export Backup">
+          💾 Quick Backup
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Dashboard View -->
+      <div id="dashboard-view" class="view">
+        <div class="page-header mb-4">
+          <h2 style="font-size: var(--font-size-2xl); margin-bottom: var(--spacing-sm);">Dashboard</h2>
+          <p style="color: var(--color-text-secondary);">Overview of your tax deductible expenses</p>
+        </div>
+
+        <div id="stats-cards" class="stats-grid"></div>
+
+        <div
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-xl);">
+          <!-- Category Breakdown -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Expenses by Category</h3>
+            </div>
+            <div id="category-breakdown"></div>
+          </div>
+
+          <!-- Monthly Trend -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">6-Month Trend</h3>
+            </div>
+            <div id="monthly-trend"></div>
+          </div>
+        </div>
+
+        <!-- Recent Expenses -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Recent Expenses</h3>
+            <a href="#" class="btn btn-sm btn-secondary" onclick="app.showView('expenses'); return false;">View All</a>
+          </div>
+          <div id="recent-expenses"></div>
+        </div>
+      </div>
+
+      <!-- Expenses View -->
+      <div id="expenses-view" class="view" style="display: none;">
+        <div class="flex-between mb-4">
+          <div>
+            <h2 style="font-size: var(--font-size-2xl); margin-bottom: var(--spacing-sm);">All Expenses</h2>
+            <p style="color: var(--color-text-secondary);">Track and manage your deductible expenses</p>
+          </div>
+          <button class="btn btn-primary" onclick="app.openExpenseModal()">
+            ➕ Add Expense
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-3">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Search</label>
+              <input type="text" id="search-expenses" class="form-input"
+                placeholder="Search by merchant, description...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select id="filter-category" class="form-select">
+                <option value="all">All Categories</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date Range</label>
+              <select id="filter-date" class="form-select">
+                <option value="all">All Time</option>
+                <option value="this-month">This Month</option>
+                <option value="this-quarter">This Quarter</option>
+                <option value="this-year">This Year</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense Table -->
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Merchant</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th class="text-right">Amount</th>
+                <th class="text-center">% Work</th>
+                <th class="text-right">Deductible</th>
+                <th class="text-center">Receipts</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="expense-table-body">
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Reports View -->
+      <div id="reports-view" class="view" style="display: none;">
+        <div class="page-header mb-4">
+          <h2 style="font-size: var(--font-size-2xl); margin-bottom: var(--spacing-sm);">Quarterly Reports</h2>
+          <p style="color: var(--color-text-secondary);">Generate reports for ZIMRA QPD submissions</p>
+        </div>
+
+        <!-- Report Controls -->
+        <div class="card mb-3">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Year</label>
+              <select id="report-year" class="form-select">
+                <!-- Populated by JavaScript -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Quarter</label>
+              <select id="report-quarter" class="form-select">
+                <option value="1">Q1 (Jan - Mar)</option>
+                <option value="2">Q2 (Apr - Jun)</option>
+                <option value="3">Q3 (Jul - Sep)</option>
+                <option value="4">Q4 (Oct - Dec)</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end; gap: var(--spacing-sm);">
+              <button class="btn btn-primary" id="generate-report-btn">
+                📊 Generate Report
+              </button>
+              <button class="btn btn-success" id="export-csv-btn">
+                📥 Export CSV
+              </button>
+              <button class="btn btn-danger" id="export-pdf-btn">
+                📄 Export PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Content -->
+        <div class="card">
+          <div id="report-content">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings & Backup View -->
+      <div id="settings-view" class="view" style="display: none;">
+        <div class="page-header mb-4">
+          <h2 style="font-size: var(--font-size-2xl); margin-bottom: var(--spacing-sm);">Settings & Backup</h2>
+          <p style="color: var(--color-text-secondary);">Manage your data and backup preferences</p>
+        </div>
+
+        <!-- Manual Backup/Restore -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h3 class="card-title">💾 Manual Backup & Restore</h3>
+            <p class="card-subtitle">Export and import your data as JSON files</p>
+          </div>
+          <div style="padding: var(--spacing-lg);">
+            <p style="margin-bottom: var(--spacing-md); color: var(--color-text-secondary);">
+              Download your data as a JSON file that you can save anywhere (including Google Drive).
+              You can restore from a backup file at any time.
+            </p>
+            <div class="flex gap-2">
+              <button class="btn btn-primary" onclick="backupManager.exportData()">
+                📥 Export Data
+              </button>
+              <button class="btn btn-secondary" onclick="backupManager.importData()">
+                📤 Import Data
+              </button>
+            </div>
+            <p style="margin-top: var(--spacing-md); font-size: var(--font-size-xs); color: var(--color-text-muted);">
+              💡 Tip: Save your backup files to Google Drive manually for cloud storage
+            </p>
+          </div>
+        </div>
+
+        <!-- Google Drive Integration -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h3 class="card-title">☁️ Google Drive Integration</h3>
+            <p class="card-subtitle">Automatic backup to your Google Drive (requires setup)</p>
+          </div>
+          <div style="padding: var(--spacing-lg);">
+            <div id="google-drive-setup">
+              <p style="margin-bottom: var(--spacing-md); color: var(--color-text-secondary);">
+                To enable Google Drive automatic backup, you need to create a Google Cloud project and get API
+                credentials.
+              </p>
+
+              <div class="form-group">
+                <label class="form-label">Client ID</label>
+                <input type="text" id="google-client-id" class="form-input" placeholder="Your Google OAuth Client ID">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="text" id="google-api-key" class="form-input" placeholder="Your Google API Key">
+              </div>
+
+              <button class="btn btn-primary" onclick="app.saveGoogleCredentials()">
+                💾 Save Credentials
+              </button>
+
+              <div
+                style="margin-top: var(--spacing-lg); padding: var(--spacing-md); background: rgba(76, 154, 255, 0.1); border-radius: var(--border-radius-md);">
+                <strong>📚 Setup Instructions:</strong>
+                <ol
+                  style="margin-top: var(--spacing-sm); padding-left: var(--spacing-lg); font-size: var(--font-size-sm);">
+                  <li>Go to <a href="https://console.cloud.google.com/" target="_blank"
+                      style="color: var(--color-primary);">Google Cloud Console</a></li>
+                  <li>Create a new project or select existing one</li>
+                  <li>Enable the Google Drive API</li>
+                  <li>Create OAuth 2.0 credentials (Web application)</li>
+                  <li>Add <code>http://localhost:8000</code> as authorized JavaScript origin</li>
+                  <li>Copy the Client ID and API Key here</li>
+                </ol>
+              </div>
+            </div>
+
+            <div id="google-drive-actions" style="margin-top: var(--spacing-lg); display: none;">
+              <div class="flex gap-2 mb-2">
+                <button class="btn btn-success" id="google-signin-btn" onclick="backupManager.signInGoogle()"
+                  style="display: none;">
+                  🔐 Sign In to Google
+                </button>
+                <button class="btn btn-secondary" id="google-signout-btn" onclick="backupManager.signOutGoogle()"
+                  style="display: none;">
+                  🚪 Sign Out
+                </button>
+              </div>
+
+              <div class="flex gap-2">
+                <button class="btn btn-primary" id="google-sync-btn" onclick="backupManager.backupToGoogleDrive()"
+                  disabled>
+                  ☁️ Backup to Google Drive
+                </button>
+                <button class="btn btn-secondary" onclick="backupManager.restoreFromGoogleDrive()" disabled
+                  id="google-restore-btn">
+                  📥 Restore from Google Drive
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🗂️ Data Management</h3>
+          </div>
+          <div style="padding: var(--spacing-lg);">
+            <p style="margin-bottom: var(--spacing-md); color: var(--color-text-secondary);">
+              Clear all data (expenses, categories, settings). This action cannot be undone!
+            </p>
+            <button class="btn btn-danger" onclick="app.clearAllData()">
+              🗑️ Clear All Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Expense Modal -->
+  <div id="expense-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="expense-modal-title">Add New Expense</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="expense-form">
+          <input type="hidden" id="expense-id" name="expenseId">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Date Paid</label>
+              <input type="date" id="date-paid" name="datePaid" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Merchant</label>
+              <input type="text" id="merchant" name="merchant" class="form-input" placeholder="e.g., Econet Wireless"
+                required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Expense Details</label>
+            <input type="text" id="expense-details" name="expenseDetails" class="form-input"
+              placeholder="e.g., Monthly internet subscription" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Category</label>
+              <select id="expense-category" name="expenseCategory" class="form-select category-select" required>
+                <!-- Populated by JavaScript -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Expense Amount ($)</label>
+              <input type="number" id="expense-amount" name="expenseAmount" class="form-input" step="0.01" min="0"
+                placeholder="0.00" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">% Used for Work</label>
+            <input type="number" id="percent-used" name="percentUsedForWork" class="form-input" min="0" max="100"
+              value="100" required>
+            <div class="form-hint">Enter percentage of expense used for work (0-100)</div>
+          </div>
+
+          <div class="form-group"
+            style="padding: var(--spacing-md); background: rgba(78, 205, 196, 0.1); border-radius: var(--border-radius-md);">
+            <label class="form-label">Deductible Amount</label>
+            <div style="font-size: var(--font-size-xl); font-weight: 700; color: var(--color-deductible);"
+              id="deductible-preview">$0.00</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes (Optional)</label>
+            <textarea id="notes" name="notes" class="form-textarea" placeholder="Additional notes..."></textarea>
+          </div>
+
+          <!-- Receipt Upload -->
+          <div class="form-group">
+            <label class="form-label">Receipts</label>
+            <div class="file-upload-zone" id="file-upload-zone">
+              <div class="file-upload-icon">📁</div>
+              <div class="file-upload-text">Click or drag files here to upload</div>
+              <div class="file-upload-hint">Supported: JPG, PNG, GIF, PDF (Max 10MB)</div>
+            </div>
+            <input type="file" id="receipt-files" multiple accept="image/*,.pdf" style="display: none;">
+            <div id="file-preview-list" class="file-preview-list"></div>
+            <div id="existing-receipts-list" class="file-preview-list"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+        <button type="submit" form="expense-form" class="btn btn-primary">Save Expense</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Expense Modal -->
+  <div id="view-expense-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Expense Details</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="view-expense-content">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-cancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google API Script -->
+  <script src="https://apis.google.com/js/api.js"></script>
+
+  <!-- Scripts -->
+  <script src="scripts/database.js"></script>
+  <script src="scripts/expenses.js"></script>
+  <script src="scripts/receipts.js"></script>
+  <script src="scripts/dashboard.js"></script>
+  <script src="scripts/reports.js"></script>
+  <script src="scripts/backup.js"></script>
+  <script src="scripts/app.js"></script>
+
+  <script>
+    // Populate year selector on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const yearSelect = document.getElementById('report-year');
+      if (yearSelect) {
+        const currentYear = new Date().getFullYear();
+        for (let i = currentYear; i >= currentYear - 5; i--) {
+          const option = document.createElement('option');
+          option.value = i;
+          option.textContent = i;
+          yearSelect.appendChild(option);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>
