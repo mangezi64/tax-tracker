@@ -103,6 +103,9 @@ class BackupManager {
     /**
    * Initialize Google Drive API
    */
+    /**
+     * Initialize Google Drive API
+     */
     async initGoogleDrive() {
         if (!this.CLIENT_ID || !this.API_KEY) {
             alert(
@@ -115,59 +118,53 @@ class BackupManager {
         try {
             console.log('Loading Google API...');
 
-            // Load Google API
+            // Load Google API (gapi)
             await this.loadGoogleAPI();
+
+            // Load Google Identity Services (GIS)
+            await this.loadGIS();
 
             console.log('Google API loaded, initializing client...');
 
-            // Wait for gapi to be ready
+            // Initialize gapi client
             await new Promise((resolve, reject) => {
-                if (typeof gapi === 'undefined') {
-                    reject(new Error('Google API (gapi) not loaded. Please check your internet connection.'));
-                    return;
-                }
-
-                gapi.load('client:auth2', async () => {
+                gapi.load('client', async () => {
                     try {
-                        console.log('Initializing gapi client...');
-
                         await gapi.client.init({
                             apiKey: this.API_KEY,
-                            clientId: this.CLIENT_ID,
                             discoveryDocs: this.DISCOVERY_DOCS,
-                            scope: this.SCOPES
                         });
-
-                        console.log('gapi client initialized successfully');
-
-                        // Listen for sign-in state changes
-                        gapi.auth2.getAuthInstance().isSignedIn.listen(this.updateSigninStatus.bind(this));
-
-                        // Handle the initial sign-in state
-                        this.updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-
+                        console.log('gapi client initialized');
                         resolve();
                     } catch (error) {
-                        console.error('Error in gapi.client.init:', error);
                         reject(error);
                     }
                 });
             });
 
-            console.log('Google Drive API initialized successfully');
+            // Initialize GIS Token Client
+            this.tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: this.CLIENT_ID,
+                scope: this.SCOPES,
+                callback: (response) => {
+                    if (response.error !== undefined) {
+                        throw (response);
+                    }
+                    this.updateSigninStatus(true);
+                    expenseManager.showToast('Signed in to Google Drive', 'success');
+                },
+            });
+
+            console.log('GIS Token Client initialized');
+
+            // Check if we have a stored token (optional, for now we start signed out)
+            this.updateSigninStatus(false);
+
             return true;
 
         } catch (error) {
             console.error('Error initializing Google Drive:', error);
-            const errorMessage = error.message || error.toString() || 'Unknown error';
-            alert(
-                'Failed to initialize Google Drive.\n\n' +
-                'Error: ' + errorMessage + '\n\n' +
-                'Please check:\n' +
-                '1. Your internet connection\n' +
-                '2. Your Client ID and API Key are correct\n' +
-                '3. Browser console (F12) for more details'
-            );
+            alert('Failed to initialize Google Drive: ' + (error.message || error.toString()));
             return false;
         }
     }
@@ -181,9 +178,25 @@ class BackupManager {
                 resolve();
                 return;
             }
-
             const script = document.createElement('script');
             script.src = 'https://apis.google.com/js/api.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    /**
+     * Load Google Identity Services script
+     */
+    loadGIS() {
+        return new Promise((resolve, reject) => {
+            if (typeof google !== 'undefined' && google.accounts) {
+                resolve();
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
             script.onload = resolve;
             script.onerror = reject;
             document.head.appendChild(script);
@@ -218,8 +231,14 @@ class BackupManager {
      */
     async signInGoogle() {
         try {
-            await gapi.auth2.getAuthInstance().signIn();
-            expenseManager.showToast('Signed in to Google Drive', 'success');
+            if (gapi.client.getToken() === null) {
+                // Prompt the user to select a Google Account and ask for consent to share their data
+                // when establishing a new session.
+                this.tokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                // Skip display of account chooser and consent dialog for an existing session.
+                this.tokenClient.requestAccessToken({ prompt: '' });
+            }
         } catch (error) {
             console.error('Sign-in error:', error);
             alert('Failed to sign in: ' + error.message);
@@ -231,7 +250,12 @@ class BackupManager {
      */
     async signOutGoogle() {
         try {
-            await gapi.auth2.getAuthInstance().signOut();
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+            }
+            this.updateSigninStatus(false);
             expenseManager.showToast('Signed out from Google Drive', 'success');
         } catch (error) {
             console.error('Sign-out error:', error);
