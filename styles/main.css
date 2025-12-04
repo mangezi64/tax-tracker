@@ -386,6 +386,13 @@ body {
   box-shadow: 0 0 0 3px rgba(76, 154, 255, 0.1);
 }
 
+.form-select option {
+  background-color: #1a1f2c;
+  /* Dark background for options */
+  color: var(--color-text-primary);
+  padding: 8px;
+}
+
 .form-input::placeholder {
   color: var(--color-text-muted);
 }
