@@ -220,6 +220,9 @@ class BackupManager {
                 signOutBtn.style.display = 'inline-flex';
                 if (syncBtn) syncBtn.disabled = false;
                 if (restoreBtn) restoreBtn.disabled = false;
+
+                // Check for newer backup
+                this.checkForNewerBackup();
             } else {
                 signInBtn.style.display = 'inline-flex';
                 signOutBtn.style.display = 'none';
@@ -318,7 +321,84 @@ class BackupManager {
     }
 
     /**
-     * Restore from Google Drive
+     * Check for newer backup on Google Drive
+     */
+    async checkForNewerBackup() {
+        if (!this.googleSignedIn) return;
+
+        try {
+            // Get last local backup date
+            const lastLocalBackup = await db.getSetting('lastGoogleDriveBackupDate');
+
+            // List latest backup file
+            const response = await gapi.client.drive.files.list({
+                q: "name contains 'tax-tracker-backup' and mimeType='application/json' and trashed=false",
+                fields: 'files(id, name, createdTime)',
+                orderBy: 'createdTime desc',
+                pageSize: 1
+            });
+
+            const files = response.result.files;
+            if (!files || files.length === 0) return;
+
+            const latestCloudBackup = files[0];
+            const cloudDate = new Date(latestCloudBackup.createdTime);
+
+            // If we have no local record, or cloud is newer than local record
+            // We add a small buffer (1 minute) to avoid prompting for the backup we just made
+            const localDate = lastLocalBackup ? new Date(lastLocalBackup) : new Date(0);
+
+            // Check if cloud is significantly newer (more than 1 minute)
+            if (cloudDate > new Date(localDate.getTime() + 60000)) {
+                const shouldRestore = confirm(
+                    `🔄 Cloud Sync Found\n\n` +
+                    `We found a newer backup on Google Drive from ${cloudDate.toLocaleString()}.\n\n` +
+                    `Do you want to restore this data?`
+                );
+
+                if (shouldRestore) {
+                    await this.restoreFile(latestCloudBackup.id);
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for backups:', error);
+        }
+    }
+
+    /**
+     * Restore specific file by ID
+     */
+    async restoreFile(fileId) {
+        try {
+            expenseManager.showToast('Downloading backup...', 'info');
+
+            const response = await gapi.client.drive.files.get({
+                fileId: fileId,
+                alt: 'media'
+            });
+
+            const data = response.result;
+
+            // Import data
+            await db.importData(data);
+
+            expenseManager.showToast('Data restored successfully!', 'success');
+
+            // Update local record
+            await db.setSetting('lastGoogleDriveBackupDate', new Date().toISOString());
+
+            // Refresh UI
+            await dashboardManager.refreshDashboard();
+            await expenseManager.renderExpenseTable();
+
+        } catch (error) {
+            console.error('Restore error:', error);
+            alert('Failed to restore backup: ' + error.message);
+        }
+    }
+
+    /**
+     * Restore from Google Drive (Manual)
      */
     async restoreFromGoogleDrive() {
         if (!this.googleSignedIn) {
