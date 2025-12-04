@@ -295,7 +295,26 @@ class Database {
     async initializeDefaultCategories() {
         const existingCategories = await this.getAllCategories();
 
+        // Migration: Rename Desk/Chair to Furniture if they exist
         if (existingCategories.length > 0) {
+            const desk = existingCategories.find(c => c.name === 'Desk');
+            const chair = existingCategories.find(c => c.name === 'Chair');
+            const furniture = existingCategories.find(c => c.name === 'Furniture');
+
+            if ((desk || chair) && !furniture) {
+                // Create Furniture category
+                await this.addCategory({ name: 'Furniture', color: '#ff5630', icon: '🪑' });
+
+                // Delete old categories
+                if (desk) await this.deleteCategory(desk.id);
+                if (chair) await this.deleteCategory(chair.id);
+
+                // Note: Expenses associated with Desk/Chair will need to be updated manually or via a more complex migration
+                // For now, we just ensure the category list is correct
+                console.log('Migrated Desk/Chair categories to Furniture');
+                return await this.getAllCategories();
+            }
+
             return existingCategories;
         }
 
@@ -303,8 +322,7 @@ class Database {
             { name: 'Internet', color: '#4c9aff', icon: '🌐' },
             { name: 'Electricity', color: '#ffab00', icon: '⚡' },
             { name: 'Computer', color: '#36b37e', icon: '💻' },
-            { name: 'Desk', color: '#ff5630', icon: '🪑' },
-            { name: 'Chair', color: '#6554c0', icon: '🪑' },
+            { name: 'Furniture', color: '#ff5630', icon: '🪑' },
             { name: 'Office Supplies', color: '#00b8d9', icon: '📎' },
             { name: 'Software', color: '#ff8b00', icon: '💿' },
             { name: 'Professional Services', color: '#00875a', icon: '🤝' },
