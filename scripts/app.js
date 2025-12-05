@@ -35,6 +35,9 @@ class App {
             console.log('Loading categories into UI...');
             await this.loadCategories();
 
+            // Populate year filter
+            this.populateYearFilter();
+
             // Initialize event listeners
             console.log('Setting up event listeners...');
             this.initializeEventListeners();
@@ -143,7 +146,10 @@ class App {
 
         // Filter controls
         const categoryFilter = document.getElementById('filter-category');
-        const dateFilter = document.getElementById('filter-date');
+        const yearFilter = document.getElementById('filter-year');
+        const quarterFilter = document.getElementById('filter-quarter');
+        const dateFromFilter = document.getElementById('filter-date-from');
+        const dateToFilter = document.getElementById('filter-date-to');
         const searchInput = document.getElementById('search-expenses');
 
         if (categoryFilter) {
@@ -152,9 +158,27 @@ class App {
             });
         }
 
-        if (dateFilter) {
-            dateFilter.addEventListener('change', (e) => {
-                expenseManager.setFilter('dateRange', e.target.value);
+        if (yearFilter) {
+            yearFilter.addEventListener('change', (e) => {
+                expenseManager.setFilter('year', e.target.value);
+            });
+        }
+
+        if (quarterFilter) {
+            quarterFilter.addEventListener('change', (e) => {
+                expenseManager.setFilter('quarter', e.target.value);
+            });
+        }
+
+        if (dateFromFilter) {
+            dateFromFilter.addEventListener('change', (e) => {
+                expenseManager.setFilter('dateFrom', e.target.value);
+            });
+        }
+
+        if (dateToFilter) {
+            dateToFilter.addEventListener('change', (e) => {
+                expenseManager.setFilter('dateTo', e.target.value);
             });
         }
 
@@ -446,6 +470,26 @@ class App {
         select.innerHTML = years.map(year =>
             `<option value="${year}">${year}</option>`
         ).join('');
+    }
+
+    /**
+     * Populate year filter for expenses
+     */
+    populateYearFilter() {
+        const select = document.getElementById('filter-year');
+        if (!select) return;
+
+        const currentYear = new Date().getFullYear();
+        const years = [];
+
+        for (let i = currentYear; i >= currentYear - 10; i--) {
+            years.push(i);
+        }
+
+        const options = '<option value="all">All Years</option>' +
+            years.map(year => `<option value="${year}">${year}</option>`).join('');
+
+        select.innerHTML = options;
     }
 
     /**

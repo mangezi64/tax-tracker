@@ -7,7 +7,10 @@ class ExpenseManager {
   constructor() {
     this.currentFilter = {
       category: 'all',
-      dateRange: 'all',
+      year: 'all',
+      quarter: 'all',
+      dateFrom: '',
+      dateTo: '',
       searchTerm: ''
     };
     this.currentSort = {
@@ -174,31 +177,34 @@ class ExpenseManager {
         return false;
       }
 
-      // Date range filter
-      if (this.currentFilter.dateRange !== 'all') {
-        const expenseDate = new Date(expense.datePaid);
-        const now = new Date();
+      const expenseDate = new Date(expense.datePaid);
 
-        switch (this.currentFilter.dateRange) {
-          case 'this-month':
-            if (expenseDate.getMonth() !== now.getMonth() ||
-              expenseDate.getFullYear() !== now.getFullYear()) {
-              return false;
-            }
-            break;
-          case 'this-quarter':
-            const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
-            const expenseQuarter = Math.floor(expenseDate.getMonth() / 3) + 1;
-            if (expenseQuarter !== currentQuarter ||
-              expenseDate.getFullYear() !== now.getFullYear()) {
-              return false;
-            }
-            break;
-          case 'this-year':
-            if (expenseDate.getFullYear() !== now.getFullYear()) {
-              return false;
-            }
-            break;
+      // Custom date range filter (takes priority)
+      if (this.currentFilter.dateFrom && this.currentFilter.dateTo) {
+        const fromDate = new Date(this.currentFilter.dateFrom);
+        const toDate = new Date(this.currentFilter.dateTo);
+        // Set time to start/end of day for inclusive range
+        fromDate.setHours(0, 0, 0, 0);
+        toDate.setHours(23, 59, 59, 999);
+
+        if (expenseDate < fromDate || expenseDate > toDate) {
+          return false;
+        }
+      }
+      // Year filter
+      else if (this.currentFilter.year !== 'all') {
+        const year = parseInt(this.currentFilter.year);
+        if (expenseDate.getFullYear() !== year) {
+          return false;
+        }
+
+        // Quarter filter (only applies if year is selected)
+        if (this.currentFilter.quarter !== 'all') {
+          const quarter = parseInt(this.currentFilter.quarter);
+          const expenseQuarter = Math.floor(expenseDate.getMonth() / 3) + 1;
+          if (expenseQuarter !== quarter) {
+            return false;
+          }
         }
       }
 
@@ -476,6 +482,275 @@ class ExpenseManager {
       toast.style.animation = 'slideOut 0.3s ease';
       setTimeout(() => toast.remove(), 300);
     }, 3000);
+  }
+
+  /**
+   * Calculate summary for currently filtered expenses
+   */
+  async getSummary() {
+    const allExpenses = await db.getAllExpenses();
+    const filtered = this.sortExpenses(this.filterExpenses(allExpenses));
+
+    const summary = {
+      count: filtered.length,
+      totalExpenses: filtered.reduce((sum, exp) => sum + exp.expenseAmount, 0),
+      totalDeductible: filtered.reduce((sum, exp) => sum + exp.deductible, 0),
+      averageWorkPercentage: filtered.length > 0
+        ? filtered.reduce((sum, exp) => sum + exp.percentUsedForWork, 0) / filtered.length
+        : 0
+    };
+
+    return { filtered, summary };
+  }
+
+  /**
+   * Export filtered expenses to CSV
+   */
+  async exportFilteredCSV() {
+    try {
+      const { filtered, summary } = await this.getSummary();
+
+      if (filtered.length === 0) {
+        alert('No expenses to export with current filters');
+        return;
+      }
+
+      // Create CSV content
+      let csv = 'Date,Merchant,Description,Category,Amount,% Work,Deductible,Notes\n';
+
+      filtered.forEach(expense => {
+        const row = [
+          this.formatDate(expense.datePaid),
+          `"${expense.merchant}"`,
+          `"${expense.expenseDetails}"`,
+          expense.expenseCategory,
+          expense.expenseAmount.toFixed(2),
+          expense.percentUsedForWork,
+          expense.deductible.toFixed(2),
+          `"${expense.notes || ''}"`
+        ].join(',');
+        csv += row + '\n';
+      });
+
+      // Add summary
+      csv += '\nSUMMARY\n';
+      csv += `Total Expenses,${summary.totalExpenses.toFixed(2)}\n`;
+      csv += `Total Deductible,${summary.totalDeductible.toFixed(2)}\n`;
+      csv += `Count,${summary.count}\n`;
+      csv += `Average Work %,${summary.averageWorkPercentage.toFixed(1)}%\n`;
+
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      this.showToast('CSV exported successfully', 'success');
+    } catch (error) {
+      console.error('CSV export error:', error);
+      alert('Failed to export CSV: ' + error.message);
+    }
+  }
+
+  /**
+   * Export filtered expenses to PDF
+   */
+  async exportFilteredPDF() {
+    try {
+      const { filtered, summary } = await this.getSummary();
+
+      if (filtered.length === 0) {
+        alert('No expenses to export with current filters');
+        return;
+      }
+
+      // Check if jsPDF is loaded
+      if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
+        alert('PDF library not loaded. Please refresh the page.');
+        return;
+      }
+
+      const { jsPDF } = jspdf;
+      const doc = new jsPDF();
+
+      // Title
+      doc.setFontSize(18);
+      doc.text('Expense Report', 14, 20);
+
+      // Filter info
+      doc.setFontSize(10);
+      let yPos = 30;
+
+      if (this.currentFilter.year !== 'all') {
+        doc.text(`Year: ${this.currentFilter.year}`, 14, yPos);
+        yPos += 5;
+      }
+      if (this.currentFilter.quarter !== 'all') {
+        doc.text(`Quarter: Q${this.currentFilter.quarter}`, 14, yPos);
+        yPos += 5;
+      }
+      if (this.currentFilter.dateFrom && this.currentFilter.dateTo) {
+        doc.text(`Date Range: ${this.currentFilter.dateFrom} to ${this.currentFilter.dateTo}`, 14, yPos);
+        yPos += 5;
+      }
+      if (this.currentFilter.category !== 'all') {
+        doc.text(`Category: ${this.currentFilter.category}`, 14, yPos);
+        yPos += 5;
+      }
+
+      yPos += 10;
+
+      // Summary box
+      doc.setFillColor(240, 240, 240);
+      doc.rect(14, yPos, 180, 30, 'F');
+      doc.setFontSize(12);
+      doc.text('SUMMARY', 16, yPos + 7);
+      doc.setFontSize(10);
+      doc.text(`Total Expenses: $${summary.totalExpenses.toFixed(2)}`, 16, yPos + 14);
+      doc.text(`Total Deductible: $${summary.totalDeductible.toFixed(2)}`, 16, yPos + 21);
+      doc.text(`Count: ${summary.count}`, 110, yPos + 14);
+      doc.text(`Avg Work %: ${summary.averageWorkPercentage.toFixed(1)}%`, 110, yPos + 21);
+
+      yPos += 40;
+
+      // Table header
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text('Date', 14, yPos);
+      doc.text('Merchant', 35, yPos);
+      doc.text('Category', 75, yPos);
+      doc.text('Amount', 115, yPos);
+      doc.text('Work %', 140, yPos);
+      doc.text('Deductible', 165, yPos);
+
+      yPos += 5;
+      doc.setFont(undefined, 'normal');
+
+      // Table rows
+      filtered.forEach(expense => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.text(this.formatDate(expense.datePaid), 14, yPos);
+        doc.text(expense.merchant.substring(0, 20), 35, yPos);
+        doc.text(expense.expenseCategory.substring(0, 15), 75, yPos);
+        doc.text(`$${expense.expenseAmount.toFixed(2)}`, 115, yPos);
+        doc.text(`${expense.percentUsedForWork}%`, 140, yPos);
+        doc.text(`$${expense.deductible.toFixed(2)}`, 165, yPos);
+
+        yPos += 7;
+      });
+
+      // Save
+      doc.save(`expenses-${new Date().toISOString().split('T')[0]}.pdf`);
+      this.showToast('PDF exported successfully', 'success');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      alert('Failed to export PDF: ' + error.message);
+    }
+  }
+
+  /**
+   * Print filtered expenses
+   */
+  async printFilteredExpenses() {
+    try {
+      const { filtered, summary } = await this.getSummary();
+
+      if (filtered.length === 0) {
+        alert('No expenses to print with current filters');
+        return;
+      }
+
+      // Create print window content
+      let printContent = `
+        <html>
+        <head>
+          <title>Expense Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { text-align: center; }
+            .summary { background: #f0f0f0; padding: 15px; margin: 20px 0; border-radius: 5px; }
+            .summary h2 { margin-top: 0; }
+            .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #333; color: white; }
+            .text-right { text-align: right; }
+            @media print {
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Expense Report</h1>
+          
+          <div class="summary">
+            <h2>Summary</h2>
+            <div class="summary-grid">
+              <div><strong>Total Expenses:</strong> $${summary.totalExpenses.toFixed(2)}</div>
+              <div><strong>Total Deductible:</strong> $${summary.totalDeductible.toFixed(2)}</div>
+              <div><strong>Count:</strong> ${summary.count}</div>
+              <div><strong>Avg Work %:</strong> ${summary.averageWorkPercentage.toFixed(1)}%</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Merchant</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th class="text-right">Amount</th>
+                <th class="text-right">Work %</th>
+                <th class="text-right">Deductible</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      filtered.forEach(expense => {
+        printContent += `
+          <tr>
+            <td>${this.formatDate(expense.datePaid)}</td>
+            <td>${this.escapeHtml(expense.merchant)}</td>
+            <td>${this.escapeHtml(expense.expenseDetails)}</td>
+            <td>${this.escapeHtml(expense.expenseCategory)}</td>
+            <td class="text-right">$${expense.expenseAmount.toFixed(2)}</td>
+            <td class="text-right">${expense.percentUsedForWork}%</td>
+            <td class="text-right">$${expense.deductible.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+
+      printContent += `
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
+
+      // Open print dialog
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+
+      this.showToast('Opening print dialog...', 'info');
+    } catch (error) {
+      console.error('Print error:', error);
+      alert('Failed to print: ' + error.message);
+    }
   }
 }
 

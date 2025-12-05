@@ -139,15 +139,49 @@
                 <option value="all">All Categories</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Date Range</label>
-              <select id="filter-date" class="form-select">
-                <option value="all">All Time</option>
-                <option value="this-month">This Month</option>
-                <option value="this-quarter">This Quarter</option>
-                <option value="this-year">This Year</option>
+              <label class="form-label">Year</label>
+              <select id="filter-year" class="form-select">
+                <option value="all">All Years</option>
               </select>
             </div>
+            <div class="form-group">
+              <label class="form-label">Quarter</label>
+              <select id="filter-quarter" class="form-select">
+                <option value="all">All Quarters</option>
+                <option value="1">Q1 (Jan - Mar)</option>
+                <option value="2">Q2 (Apr - Jun)</option>
+                <option value="3">Q3 (Jul - Sep)</option>
+                <option value="4">Q4 (Oct - Dec)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Custom Date Range - From</label>
+              <input type="date" id="filter-date-from" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Custom Date Range - To</label>
+              <input type="date" id="filter-date-to" class="form-input">
+            </div>
+          </div>
+
+          <!-- Export Actions -->
+          <div style="margin-top: var(--spacing-md); display: flex; gap: var(--spacing-sm); justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="expenseManager.printFilteredExpenses()">
+              🖨️ Print List
+            </button>
+            <button class="btn btn-success" onclick="expenseManager.exportFilteredCSV()">
+              📊 Export CSV
+            </button>
+            <button class="btn btn-danger" onclick="expenseManager.exportFilteredPDF()">
+              📄 Export PDF
+            </button>
           </div>
         </div>
 
