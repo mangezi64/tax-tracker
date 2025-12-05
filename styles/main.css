@@ -954,3 +954,114 @@ body {
     font-size: var(--font-size-xs);
   }
 }
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+
+  /* Hide all UI elements except modal content */
+  .sidebar,
+  .modal-close,
+  .modal-cancel,
+  #print-expense-btn,
+  .btn,
+  .nav-menu,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  /* Reset body and modal for print */
+  body {
+    background: white;
+    color: black;
+  }
+
+  .modal-overlay.print-mode {
+    display: block !important;
+    position: static;
+    background: white;
+  }
+
+  .modal-overlay.print-mode .modal {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    background: white;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .modal-overlay.print-mode .modal-header {
+    background: white;
+    color: black;
+    border-bottom: 2px solid #333;
+    padding: 20px;
+  }
+
+  .modal-overlay.print-mode .modal-title {
+    color: black;
+    font-size: 24pt;
+    text-align: center;
+  }
+
+  .modal-overlay.print-mode .modal-body {
+    padding: 20px;
+    background: white;
+    color: black;
+  }
+
+  .modal-overlay.print-mode .modal-footer {
+    display: none !important;
+  }
+
+  /* Format expense details for print */
+  .modal-overlay.print-mode .form-group {
+    margin-bottom: 15px;
+    page-break-inside: avoid;
+  }
+
+  .modal-overlay.print-mode .form-label {
+    font-weight: bold;
+    color: black;
+    font-size: 11pt;
+  }
+
+  .modal-overlay.print-mode .form-value {
+    color: black;
+    font-size: 11pt;
+  }
+
+  /* Receipt images */
+  .modal-overlay.print-mode .receipt-image {
+    max-width: 300px;
+    max-height: 400px;
+    page-break-inside: avoid;
+    border: 1px solid #ccc;
+    margin: 10px;
+  }
+
+  .modal-overlay.print-mode .receipt-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Add print header info */
+  .modal-overlay.print-mode .modal-header::after {
+    content: "Tax Deductible Expense Record";
+    display: block;
+    text-align: center;
+    font-size: 14pt;
+    margin-top: 10px;
+    color: #666;
+  }
+
+  /* Ensure single page if possible */
+  @page {
+    margin: 1cm;
+  }
+}
