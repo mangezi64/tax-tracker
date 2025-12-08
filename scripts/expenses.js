@@ -335,12 +335,37 @@ class ExpenseManager {
 
     modal.classList.add('active');
 
-    // Load receipts
+    // Load receipts - DIRECTLY display without using global receipt manager state
+    const galleryContainer = document.getElementById(`receipt-gallery-${expense.id}`);
+
     if (expense.receiptFiles && expense.receiptFiles.length > 0) {
-      receiptManager.displayReceipts(expense.receiptFiles, `receipt-gallery-${expense.id}`);
+      // Display receipts directly without polluting receiptManager state
+      galleryContainer.innerHTML = expense.receiptFiles.map((file, index) => {
+        const isImage = file.type.startsWith('image/');
+        const isPDF = file.type === 'application/pdf';
+
+        return `
+          <div class="receipt-item" style="display: inline-block; margin: 10px; position: relative;">
+            ${isImage ? `
+              <img src="${file.data}" alt="${file.name}" 
+                   style="max-width: 200px; max-height: 200px; cursor: pointer; border: 1px solid var(--glass-border); border-radius: 8px;"
+                   onclick="receiptManager.viewReceipt('${file.data}', '${file.name}')">
+            ` : isPDF ? `
+              <div style="width: 200px; height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+                          border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer; background: var(--color-bg-tertiary);"
+                   onclick="receiptManager.viewReceipt('${file.data}', '${file.name}')">
+                <div style="font-size: 48px;">📄</div>
+                <div style="font-size: 12px; margin-top: 8px; text-align: center; padding: 0 10px; word-break: break-word;">${file.name}</div>
+              </div>
+            ` : ''}
+            <div style="margin-top: 5px; font-size: 12px; text-align: center; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${file.name}
+            </div>
+          </div>
+        `;
+      }).join('');
     } else {
-      document.getElementById(`receipt-gallery-${expense.id}`).innerHTML =
-        '<p class="text-muted">No receipts attached</p>';
+      galleryContainer.innerHTML = '<p class="text-muted">No receipts attached</p>';
     }
   }
 
