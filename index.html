@@ -171,8 +171,21 @@
             </div>
           </div>
 
+          <!-- Export Options -->
+          <div
+            style="margin-top: var(--spacing-md); padding: var(--spacing-md); background: rgba(76, 154, 255, 0.1); border-radius: var(--border-radius-md);">
+            <div style="margin-bottom: var(--spacing-sm);">
+              <label style="display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer;">
+                <input type="checkbox" id="include-receipts-pdf" checked style="cursor: pointer;">
+                <span style="font-size: var(--font-size-sm); color: var(--color-text-primary);">
+                  📎 Include receipts in PDF export (images will be embedded, PDFs will be listed)
+                </span>
+              </label>
+            </div>
+          </div>
+
           <!-- Export Actions -->
-          <div style="margin-top: var(--spacing-md); display: flex; gap: var(--spacing-sm); justify-content: flex-end;">
+          <div style="margin-top: var(--spacing-sm); display: flex; gap: var(--spacing-sm); justify-content: flex-end;">
             <button class="btn btn-secondary" onclick="expenseManager.printFilteredExpenses()">
               🖨️ Print List
             </button>

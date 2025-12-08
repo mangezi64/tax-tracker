@@ -673,6 +673,144 @@ class ExpenseManager {
         yPos += 7;
       });
 
+      // Check if receipts should be included
+      const includeReceipts = document.getElementById('include-receipts-pdf');
+      if (includeReceipts && includeReceipts.checked) {
+        // Collect all expenses with receipts
+        const expensesWithReceipts = filtered.filter(exp =>
+          exp.receiptFiles && exp.receiptFiles.length > 0
+        );
+
+        if (expensesWithReceipts.length > 0) {
+          // Add new page for receipts appendix
+          doc.addPage();
+          yPos = 20;
+
+          // Receipts appendix title
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('RECEIPTS APPENDIX', 14, yPos);
+          yPos += 10;
+          doc.setFont(undefined, 'normal');
+
+          const pdfReceiptsList = [];
+
+          // Process each expense with receipts
+          for (const expense of expensesWithReceipts) {
+            // Add expense header
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+
+            // Check if we need a new page
+            if (yPos > 260) {
+              doc.addPage();
+              yPos = 20;
+            }
+
+            doc.text(`Expense: ${expense.merchant}`, 14, yPos);
+            yPos += 6;
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Date: ${this.formatDate(expense.datePaid)}  |  Amount: $${expense.expenseAmount.toFixed(2)}  |  Deductible: $${expense.deductible.toFixed(2)}`, 14, yPos);
+            yPos += 8;
+
+            // Process receipts for this expense
+            for (const receipt of expense.receiptFiles) {
+              if (receipt.type.startsWith('image/')) {
+                // Embed image receipt
+                try {
+                  // Check if we need a new page for the image
+                  if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                  }
+
+                  // Calculate image dimensions to fit on page
+                  const img = new Image();
+                  img.src = receipt.data;
+
+                  // Wait for image to load to get dimensions
+                  await new Promise((resolve) => {
+                    img.onload = resolve;
+                    // Fallback in case image is already loaded
+                    if (img.complete) resolve();
+                  });
+
+                  const maxWidth = 180;
+                  const maxHeight = 200;
+                  const imgWidth = img.width;
+                  const imgHeight = img.height;
+
+                  let finalWidth = maxWidth;
+                  let finalHeight = (imgHeight * maxWidth) / imgWidth;
+
+                  if (finalHeight > maxHeight) {
+                    finalHeight = maxHeight;
+                    finalWidth = (imgWidth * maxHeight) / imgHeight;
+                  }
+
+                  doc.addImage(receipt.data, 'JPEG', 14, yPos, finalWidth, finalHeight);
+                  yPos += finalHeight + 5;
+
+                  // Add filename
+                  doc.setFontSize(8);
+                  doc.text(`File: ${receipt.name}`, 14, yPos);
+                  yPos += 10;
+                  doc.setFontSize(10);
+
+                } catch (error) {
+                  console.error('Error adding image to PDF:', error);
+                  doc.text(`[Image: ${receipt.name} - Failed to embed]`, 14, yPos);
+                  yPos += 6;
+                }
+              } else if (receipt.type === 'application/pdf') {
+                // Add to PDF receipts list
+                pdfReceiptsList.push({
+                  expense: expense.merchant,
+                  date: this.formatDate(expense.datePaid),
+                  filename: receipt.name
+                });
+              }
+            }
+
+            yPos += 5; // Space between expenses
+          }
+
+          // Add PDF receipts index if any
+          if (pdfReceiptsList.length > 0) {
+            // Check if we need a new page
+            if (yPos > 240) {
+              doc.addPage();
+              yPos = 20;
+            }
+
+            yPos += 10;
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('PDF RECEIPTS INDEX', 14, yPos);
+            yPos += 8;
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text('The following PDF receipts are not embedded. Please refer to original files or Google Drive backup:', 14, yPos);
+            yPos += 10;
+
+            pdfReceiptsList.forEach(item => {
+              if (yPos > 270) {
+                doc.addPage();
+                yPos = 20;
+              }
+
+              doc.setFont(undefined, 'bold');
+              doc.text(`• ${item.filename}`, 14, yPos);
+              doc.setFont(undefined, 'normal');
+              yPos += 5;
+              doc.text(`  Expense: ${item.expense} (${item.date})`, 14, yPos);
+              yPos += 7;
+            });
+          }
+        }
+      }
+
       // Save
       doc.save(`expenses-${new Date().toISOString().split('T')[0]}.pdf`);
       this.showToast('PDF exported successfully', 'success');
