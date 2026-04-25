@@ -1,6 +1,6 @@
 # Tax Deductible Tracker
 
-A beautiful, local-first web application for tracking tax deductible expenses for ZIMRA QPD quarterly submissions.
+A beautiful, local-first web application for tracking tax deductible expenses for ZIMRA quarterly and annual tax submissions.
 
 ## ✨ Features
 
@@ -8,7 +8,8 @@ A beautiful, local-first web application for tracking tax deductible expenses fo
 - 📎 **Receipt Management**: Upload and store receipt images/PDFs with each expense
 - 📊 **Dashboard**: Beautiful visualizations of expenses by category and trends
 - 📅 **Quarterly Reports**: Generate ZIMRA QPD-ready reports by quarter
-- 📥 **Export Options**: Download reports as CSV or PDF
+- 📆 **Annual Reports**: Generate full-year ZIMRA tax deduction reports with quarterly breakdowns, monthly trends, and category summaries
+- 📥 **Export Options**: Download reports as CSV or PDF (both quarterly and annual)
 - 🌙 **Dark Mode**: Premium dark theme for comfortable viewing
 - 💾 **Auto-Save**: All data persists locally in your browser (IndexedDB)
 - 🔒 **Privacy**: Zero backend - all data stays on your computer
@@ -64,13 +65,24 @@ Deductible = Expense Amount × (% Used for Work / 100)
 - View receipts by clicking on an expense
 - Download individual receipts when needed
 
-### Quarterly Reports
-1. Go to **"Quarterly Reports"** tab
-2. Select Year and Quarter
-3. Click **"Generate Report"**
-4. Export as:
+### Reports
+1. Go to the **"Reports"** tab in the sidebar
+2. Choose your **Report Type**:
+   - **📊 Quarterly**: For individual QPD quarter submissions
+   - **📅 Annual**: For full-year ZIMRA tax submissions
+3. Select the **Year** (and **Quarter** if quarterly)
+4. Click **"Generate Report"** to preview
+5. Export as:
    - **CSV**: For spreadsheet import/editing
    - **PDF**: For submission/printing
+
+#### Annual Report Contents
+The annual report includes:
+- **Annual Summary**: Total expenses, total deductible, average deduction rate, average monthly deductible
+- **Quarterly Breakdown**: Side-by-side comparison of all four quarters with % of annual totals
+- **Monthly Trend**: Month-by-month expense and deduction tracking
+- **Category Breakdown**: Spending by category with percentages
+- **Detailed Expense List**: Every expense for the year, sorted chronologically
 
 ### Filtering & Search
 On the Expenses page:
@@ -93,8 +105,7 @@ All data is stored locally using **IndexedDB**, including:
 - Internet 🌐
 - Electricity ⚡
 - Computer 💻
-- Desk 🪑
-- Chair 🪑
+- Furniture 🪑
 - Office Supplies 📎
 - Software 💿
 - Professional Services 🤝
@@ -145,15 +156,17 @@ The app works on:
 ```
 tax_deductables/
 ├── index.html              # Main application
+├── test.html               # Script loading tests
 ├── styles/
 │   └── main.css           # Dark mode design system
 ├── scripts/
-│   ├── app.js             # Main controller
-│   ├── database.js        # IndexedDB wrapper
+│   ├── app.js             # Main controller & report type routing
+│   ├── database.js        # IndexedDB wrapper (quarterly + annual stats)
 │   ├── expenses.js        # Expense management
 │   ├── receipts.js        # Receipt handling
 │   ├── dashboard.js       # Dashboard visualizations
-│   └── reports.js         # Report generation
+│   ├── reports.js         # Quarterly & annual report generation
+│   └── backup.js          # Data backup & restore (JSON, Google Drive)
 └── README.md              # This file
 ```
 
