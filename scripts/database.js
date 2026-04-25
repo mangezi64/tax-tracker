@@ -469,6 +469,77 @@ class Database {
     }
 
     /**
+     * Get annual statistics for a full year
+     */
+    async getAnnualStats(year) {
+        const start = `${year}-01-01`;
+        const end = `${year}-12-31`;
+        const expenses = await this.getExpensesByDateRange(start, end);
+
+        const totalExpenses = expenses.reduce((sum, exp) => sum + exp.expenseAmount, 0);
+        const totalDeductible = expenses.reduce((sum, exp) => sum + exp.deductible, 0);
+
+        // Group by category
+        const byCategory = {};
+        expenses.forEach(exp => {
+            if (!byCategory[exp.expenseCategory]) {
+                byCategory[exp.expenseCategory] = {
+                    count: 0,
+                    totalAmount: 0,
+                    totalDeductible: 0
+                };
+            }
+            byCategory[exp.expenseCategory].count++;
+            byCategory[exp.expenseCategory].totalAmount += exp.expenseAmount;
+            byCategory[exp.expenseCategory].totalDeductible += exp.deductible;
+        });
+
+        // Group by quarter
+        const byQuarter = { 1: [], 2: [], 3: [], 4: [] };
+        expenses.forEach(exp => {
+            const month = new Date(exp.datePaid).getMonth(); // 0-indexed
+            const quarter = Math.floor(month / 3) + 1;
+            byQuarter[quarter].push(exp);
+        });
+
+        const quarterSummaries = {};
+        for (const [q, qExpenses] of Object.entries(byQuarter)) {
+            quarterSummaries[q] = {
+                expenseCount: qExpenses.length,
+                totalExpenses: qExpenses.reduce((s, e) => s + e.expenseAmount, 0),
+                totalDeductible: qExpenses.reduce((s, e) => s + e.deductible, 0)
+            };
+        }
+
+        // Group by month
+        const byMonth = {};
+        expenses.forEach(exp => {
+            const month = new Date(exp.datePaid).getMonth(); // 0-indexed
+            if (!byMonth[month]) {
+                byMonth[month] = {
+                    count: 0,
+                    totalAmount: 0,
+                    totalDeductible: 0
+                };
+            }
+            byMonth[month].count++;
+            byMonth[month].totalAmount += exp.expenseAmount;
+            byMonth[month].totalDeductible += exp.deductible;
+        });
+
+        return {
+            year,
+            totalExpenses,
+            totalDeductible,
+            expenseCount: expenses.length,
+            byCategory,
+            byQuarter: quarterSummaries,
+            byMonth,
+            expenses
+        };
+    }
+
+    /**
      * Clear all data from all stores
      */
     async clearAllData() {

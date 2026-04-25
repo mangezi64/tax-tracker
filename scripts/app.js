@@ -193,16 +193,51 @@ class App {
             });
         }
 
+        // Report type toggle
+        const btnTypeQuarterly = document.getElementById('btn-type-quarterly');
+        const btnTypeAnnual = document.getElementById('btn-type-annual');
+        const quarterSelectorGroup = document.getElementById('quarter-selector-group');
+
+        this.reportType = 'quarterly'; // default
+
+        if (btnTypeQuarterly && btnTypeAnnual) {
+            btnTypeQuarterly.addEventListener('click', () => {
+                this.reportType = 'quarterly';
+                btnTypeQuarterly.style.background = 'var(--color-primary)';
+                btnTypeQuarterly.style.color = 'white';
+                btnTypeAnnual.style.background = 'var(--color-bg-tertiary)';
+                btnTypeAnnual.style.color = 'var(--color-text-secondary)';
+                btnTypeQuarterly.classList.add('active');
+                btnTypeAnnual.classList.remove('active');
+                if (quarterSelectorGroup) quarterSelectorGroup.style.display = '';
+            });
+
+            btnTypeAnnual.addEventListener('click', () => {
+                this.reportType = 'annual';
+                btnTypeAnnual.style.background = 'var(--color-primary)';
+                btnTypeAnnual.style.color = 'white';
+                btnTypeQuarterly.style.background = 'var(--color-bg-tertiary)';
+                btnTypeQuarterly.style.color = 'var(--color-text-secondary)';
+                btnTypeAnnual.classList.add('active');
+                btnTypeQuarterly.classList.remove('active');
+                if (quarterSelectorGroup) quarterSelectorGroup.style.display = 'none';
+            });
+        }
+
         // Report quarter/year selectors
         const reportYear = document.getElementById('report-year');
         const reportQuarter = document.getElementById('report-quarter');
         const generateReportBtn = document.getElementById('generate-report-btn');
 
-        if (generateReportBtn && reportYear && reportQuarter) {
+        if (generateReportBtn && reportYear) {
             generateReportBtn.addEventListener('click', () => {
                 const year = parseInt(reportYear.value);
-                const quarter = parseInt(reportQuarter.value);
-                reportManager.displayReport(year, quarter);
+                if (this.reportType === 'annual') {
+                    reportManager.displayAnnualReport(year);
+                } else {
+                    const quarter = parseInt(reportQuarter.value);
+                    reportManager.displayReport(year, quarter);
+                }
             });
         }
 
@@ -210,19 +245,27 @@ class App {
         const exportCsvBtn = document.getElementById('export-csv-btn');
         const exportPdfBtn = document.getElementById('export-pdf-btn');
 
-        if (exportCsvBtn && reportYear && reportQuarter) {
+        if (exportCsvBtn && reportYear) {
             exportCsvBtn.addEventListener('click', () => {
                 const year = parseInt(reportYear.value);
-                const quarter = parseInt(reportQuarter.value);
-                reportManager.exportCSV(year, quarter);
+                if (this.reportType === 'annual') {
+                    reportManager.exportAnnualCSV(year);
+                } else {
+                    const quarter = parseInt(reportQuarter.value);
+                    reportManager.exportCSV(year, quarter);
+                }
             });
         }
 
-        if (exportPdfBtn && reportYear && reportQuarter) {
+        if (exportPdfBtn && reportYear) {
             exportPdfBtn.addEventListener('click', () => {
                 const year = parseInt(reportYear.value);
-                const quarter = parseInt(reportQuarter.value);
-                reportManager.exportPDF(year, quarter);
+                if (this.reportType === 'annual') {
+                    reportManager.exportAnnualPDF(year);
+                } else {
+                    const quarter = parseInt(reportQuarter.value);
+                    reportManager.exportPDF(year, quarter);
+                }
             });
         }
 
