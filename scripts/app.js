@@ -6,6 +6,7 @@
 class App {
     constructor() {
         this.currentView = 'dashboard';
+        this.reportType = 'quarterly';
         this.initialized = false;
     }
 
@@ -314,16 +315,22 @@ class App {
                 await expenseManager.renderExpenseTable();
                 break;
             case 'reports':
-                // Auto-select current quarter
+                // Auto-select current year/quarter and generate appropriate report
                 const reportYear = document.getElementById('report-year');
                 const reportQuarter = document.getElementById('report-quarter');
-                if (reportYear && reportQuarter) {
+                if (reportYear) {
                     reportYear.value = new Date().getFullYear();
-                    reportQuarter.value = Math.floor(new Date().getMonth() / 3) + 1;
-                    await reportManager.displayReport(
-                        parseInt(reportYear.value),
-                        parseInt(reportQuarter.value)
-                    );
+                    if (reportQuarter) {
+                        reportQuarter.value = Math.floor(new Date().getMonth() / 3) + 1;
+                    }
+                    if (this.reportType === 'annual') {
+                        await reportManager.displayAnnualReport(parseInt(reportYear.value));
+                    } else {
+                        await reportManager.displayReport(
+                            parseInt(reportYear.value),
+                            parseInt(reportQuarter.value)
+                        );
+                    }
                 }
                 break;
         }
