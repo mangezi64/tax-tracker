@@ -284,6 +284,66 @@ class App {
     }
 
     /**
+     * Switch report type between quarterly and annual
+     */
+    switchReportType(type) {
+        this.reportType = type;
+
+        const btnQ = document.getElementById('btn-type-quarterly');
+        const btnA = document.getElementById('btn-type-annual');
+        const quarterGroup = document.getElementById('quarter-selector-group');
+
+        if (type === 'annual') {
+            if (btnA) { btnA.style.background = 'var(--color-primary)'; btnA.style.color = 'white'; }
+            if (btnQ) { btnQ.style.background = 'var(--color-bg-tertiary)'; btnQ.style.color = 'var(--color-text-secondary)'; }
+            if (quarterGroup) quarterGroup.style.display = 'none';
+        } else {
+            if (btnQ) { btnQ.style.background = 'var(--color-primary)'; btnQ.style.color = 'white'; }
+            if (btnA) { btnA.style.background = 'var(--color-bg-tertiary)'; btnA.style.color = 'var(--color-text-secondary)'; }
+            if (quarterGroup) quarterGroup.style.display = '';
+        }
+    }
+
+    /**
+     * Generate report based on current type
+     */
+    generateCurrentReport() {
+        const year = parseInt(document.getElementById('report-year').value);
+        if (this.reportType === 'annual') {
+            reportManager.displayAnnualReport(year);
+        } else {
+            const quarter = parseInt(document.getElementById('report-quarter').value);
+            reportManager.displayReport(year, quarter);
+        }
+    }
+
+    /**
+     * Export current report as CSV
+     */
+    exportCurrentCSV() {
+        const year = parseInt(document.getElementById('report-year').value);
+        if (this.reportType === 'annual') {
+            reportManager.exportAnnualCSV(year);
+        } else {
+            const quarter = parseInt(document.getElementById('report-quarter').value);
+            reportManager.exportCSV(year, quarter);
+        }
+    }
+
+    /**
+     * Export current report as PDF
+     */
+    exportCurrentPDF() {
+        const year = parseInt(document.getElementById('report-year').value);
+        if (this.reportType === 'annual') {
+            reportManager.exportAnnualPDF(year);
+        } else {
+            const quarter = parseInt(document.getElementById('report-quarter').value);
+            reportManager.exportPDF(year, quarter);
+        }
+    }
+
+    /**
      * Show a specific view
      */
     async showView(viewName) {

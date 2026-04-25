@@ -234,10 +234,12 @@
             <label class="form-label" style="margin-bottom: var(--spacing-md); display: block;">Report Type</label>
             <div id="report-type-toggle" style="display: flex; gap: 0; border-radius: var(--border-radius-md); overflow: hidden; border: 1px solid var(--glass-border); width: fit-content;">
               <button class="report-type-btn active" data-type="quarterly" id="btn-type-quarterly"
+                onclick="app.switchReportType('quarterly')" type="button"
                 style="padding: var(--spacing-sm) var(--spacing-xl); background: var(--color-primary); color: white; border: none; cursor: pointer; font-weight: 600; font-size: var(--font-size-sm); transition: all 0.3s ease;">
                 📊 Quarterly
               </button>
               <button class="report-type-btn" data-type="annual" id="btn-type-annual"
+                onclick="app.switchReportType('annual')" type="button"
                 style="padding: var(--spacing-sm) var(--spacing-xl); background: var(--color-bg-tertiary); color: var(--color-text-secondary); border: none; cursor: pointer; font-weight: 600; font-size: var(--font-size-sm); transition: all 0.3s ease;">
                 📅 Annual
               </button>
@@ -264,13 +266,13 @@
               </select>
             </div>
             <div class="form-group" style="display: flex; align-items: flex-end; gap: var(--spacing-sm);">
-              <button class="btn btn-primary" id="generate-report-btn">
+              <button class="btn btn-primary" id="generate-report-btn" type="button" onclick="app.generateCurrentReport()">
                 📊 Generate Report
               </button>
-              <button class="btn btn-success" id="export-csv-btn">
+              <button class="btn btn-success" id="export-csv-btn" type="button" onclick="app.exportCurrentCSV()">
                 📥 Export CSV
               </button>
-              <button class="btn btn-danger" id="export-pdf-btn">
+              <button class="btn btn-danger" id="export-pdf-btn" type="button" onclick="app.exportCurrentPDF()">
                 📄 Export PDF
               </button>
             </div>
