@@ -22,3 +22,7 @@ npm-debug.log*
 # Personal notes (optional)
 notes.txt
 TODO.md
+
+# Python
+venv/
+__pycache__/
