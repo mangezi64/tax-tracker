@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% set active_page = "settings" %}
+{% block content %}
+<div class="page-header mb-4">
+  <h2 style="font-size: var(--font-size-2xl); margin-bottom: var(--spacing-sm);">Settings & Backup</h2>
+  <p style="color: var(--color-text-secondary);">Manage your data and backup preferences</p>
+</div>
+
+<!-- Manual Backup -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title">💾 Manual Backup & Restore</h3>
+    <p class="card-subtitle">Export and import your data as JSON files</p>
+  </div>
+  <div style="padding: var(--spacing-lg);">
+    <p style="margin-bottom: var(--spacing-md); color: var(--color-text-secondary);">
+      Download your data as a JSON file. You can restore from a backup file at any time.
+    </p>
+    <div class="flex gap-2">
+      <a href="{{ url_for('backup_export') }}" class="btn btn-primary">📥 Export Data</a>
+      <button class="btn btn-secondary" onclick="document.getElementById('import-form').style.display='block'">📤 Import Data</button>
+    </div>
+    <form id="import-form" method="POST" action="{{ url_for('backup_import') }}" enctype="multipart/form-data"
+      style="display: none; margin-top: var(--spacing-md); padding: var(--spacing-md); background: rgba(76,154,255,0.1); border-radius: var(--border-radius-md);">
+      <div class="form-group">
+        <label class="form-label">Select backup file</label>
+        <input type="file" name="backup_file" class="form-input" accept=".json" required>
+      </div>
+      <button type="submit" class="btn btn-primary">📤 Import Now</button>
+    </form>
+  </div>
+</div>
+
+<!-- Google Drive -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title">☁️ Google Drive Integration</h3>
+    <p class="card-subtitle">Backup to your Google Drive</p>
+  </div>
+  <div style="padding: var(--spacing-lg);">
+    <form method="POST" action="{{ url_for('save_google_creds') }}">
+      <div class="form-group">
+        <label class="form-label">Client ID</label>
+        <input type="text" name="client_id" class="form-input" placeholder="Your Google OAuth Client ID">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client Secret</label>
+        <input type="text" name="client_secret" class="form-input" placeholder="Your Google Client Secret">
+      </div>
+      <button type="submit" class="btn btn-primary">💾 Save Credentials</button>
+    </form>
+
+    <div style="margin-top: var(--spacing-lg); display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+      <a href="{{ url_for('google_auth') }}" class="btn btn-success">🔐 Sign In to Google</a>
+      <form method="POST" action="{{ url_for('google_backup') }}" style="display: inline;">
+        <button type="submit" class="btn btn-primary">☁️ Backup to Drive</button>
+      </form>
+      <form method="POST" action="{{ url_for('google_restore') }}" style="display: inline;">
+        <button type="submit" class="btn btn-secondary">📥 Restore from Drive</button>
+      </form>
+    </div>
+
+    <div style="margin-top: var(--spacing-lg); padding: var(--spacing-md); background: rgba(76,154,255,0.1); border-radius: var(--border-radius-md);">
+      <strong>📚 Setup Instructions:</strong>
+      <ol style="margin-top: var(--spacing-sm); padding-left: var(--spacing-lg); font-size: var(--font-size-sm);">
+        <li>Go to <a href="https://console.cloud.google.com/" target="_blank" style="color: var(--color-primary);">Google Cloud Console</a></li>
+        <li>Create a new project or select existing one</li>
+        <li>Enable the Google Drive API</li>
+        <li>Create OAuth 2.0 credentials (Web application)</li>
+        <li>Add <code>http://localhost:8000/google/callback</code> as authorized redirect URI</li>
+        <li>Copy the Client ID and Client Secret here</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- Data Management -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">🗂️ Data Management</h3>
+  </div>
+  <div style="padding: var(--spacing-lg);">
+    <p style="margin-bottom: var(--spacing-md); color: var(--color-text-secondary);">
+      Clear all data (expenses, categories, settings). This action cannot be undone!
+    </p>
+    <form method="POST" action="{{ url_for('clear_data') }}" onsubmit="return confirm('⚠️ This will permanently delete ALL data. Are you sure?')">
+      <button type="submit" class="btn btn-danger">🗑️ Clear All Data</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
