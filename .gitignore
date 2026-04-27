@@ -22,11 +22,3 @@ npm-debug.log*
 # Personal notes (optional)
 notes.txt
 TODO.md
-
-# Python / Flask
-venv/
-__pycache__/
-*.pyc
-instance/
-*.db
-uploads/

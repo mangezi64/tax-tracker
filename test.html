@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Tax Tracker</title>
+    <style>
+        body {
+            background: #0a0e17;
+            color: white;
+            font-family: sans-serif;
+            padding: 40px;
+        }
+
+        .test-result {
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .success {
+            background: #1a4d2e;
+            border-color: #36b37e;
+        }
+
+        .error {
+            background: #4d1a1a;
+            border-color: #ff5630;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Tax Tracker - Script Loading Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function addResult(name, status, message) {
+            const div = document.createElement('div');
+            div.className = `test-result ${status}`;
+            div.innerHTML = `<strong>${name}:</strong> ${message}`;
+            results.appendChild(div);
+        }
+
+        // Test 1: Check if scripts load
+        addResult('Page Loaded', 'success', 'HTML loaded successfully');
+
+        // Test 2: Check database object
+        const checkScript = (name, obj) => {
+            if (typeof obj !== 'undefined') {
+                addResult(name, 'success', 'Script loaded and object available');
+                return true;
+            } else {
+                addResult(name, 'error', 'Script NOT loaded or object undefined');
+                return false;
+            }
+        };
+
+        // Wait for DOM to load all scripts
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addResult('Window Load Event', 'success', 'All resources loaded');
+
+                checkScript('Database (db)', window.db);
+                checkScript('Expense Manager', window.expenseManager);
+                checkScript('Receipt Manager', window.receiptManager);
+                checkScript('Dashboard Manager', window.dashboardManager);
+                checkScript('Report Manager', window.reportManager);
+                checkScript('App', window.app);
+
+                // Try to initialize
+                if (window.db) {
+                    addResult('Database Init Test', 'success', 'Attempting to initialize database...');
+                    window.db.init().then(() => {
+                        addResult('Database Init', 'success', 'Database initialized successfully!');
+                    }).catch(err => {
+                        addResult('Database Init', 'error', 'Error: ' + err.message);
+                    });
+                }
+            }, 1000);
+        });
+    </script>
+
+    <!-- Load all scripts -->
+    <script src="scripts/database.js"></script>
+    <script src="scripts/expenses.js"></script>
+    <script src="scripts/receipts.js"></script>
+    <script src="scripts/dashboard.js"></script>
+    <script src="scripts/reports.js"></script>
+    <script src="scripts/app.js"></script>
+</body>
+
+</html>
