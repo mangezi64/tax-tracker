@@ -1,0 +1,6 @@
+flask==3.0.0
+flask-sqlalchemy==3.1.1
+fpdf2==2.8.1
+google-api-python-client==2.111.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.0
